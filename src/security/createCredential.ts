@@ -1,6 +1,6 @@
 import { ApiKeyCreds, ClobClient, Chain } from "@polymarket/clob-client";
-import { writeFileSync, existsSync, readFileSync } from "fs";
-import { resolve } from "path";
+import { writeFileSync, existsSync, readFileSync, mkdirSync } from "fs";
+import { resolve, dirname } from "path";
 import { Wallet } from "@ethersproject/wallet";
 import { logger } from "../utils/logger";
 import { config } from "../config";
@@ -52,9 +52,20 @@ export async function createCredential(): Promise<ApiKeyCreds | null> {
         );
         return null;
     }
-}   
+}
 
 export async function saveCredential(credential: ApiKeyCreds) {
     const credentialPath = resolve(process.cwd(), "src/data/credential.json");
+
+    // ✅ FIX: Ensure src/data/ directory exists before writing
+    // Without this, writeFileSync throws ENOENT on a fresh clone
+    // because Node cannot create intermediate directories automatically.
+    const dir = dirname(credentialPath);
+    if (!existsSync(dir)) {
+        mkdirSync(dir, { recursive: true });
+        logger.info(`Created missing directory: ${dir}`);
+    }
+
     writeFileSync(credentialPath, JSON.stringify(credential, null, 2));
-}
+    }
+                
